@@ -12,6 +12,7 @@ import {
   Col,
   Row,
   BranchSelect,
+  TaxRatesSelect,
   BranchSelectButton,
   FeatureCan,
   FFormGroup,
@@ -41,7 +42,7 @@ import { MoneyInExchangeRateField } from '../MoneyInExchangeRateField';
  */
 export default function OwnerContributionFormFields() {
   // Money in dialog context.
-  const { accounts, branches } = useMoneyInDailogContext();
+  const { accounts, branches, taxRates } = useMoneyInDailogContext();
   const { account } = useMoneyInFieldsContext();
 
   // Sets the primary branch to form.
@@ -102,7 +103,7 @@ export default function OwnerContributionFormFields() {
 
       {/*------------ Amount -----------*/}
       <Row>
-        <Col xs={10}>
+        <Col xs={5}>
           <FFormGroup
             name={'amount'}
             label={<T id={'amount'} />}
@@ -112,6 +113,19 @@ export default function OwnerContributionFormFields() {
               <InputPrependText text={account?.currency_code || '--'} />
               <FMoneyInputGroup name={'amount'} minimal={true} />
             </ControlGroup>
+          </FFormGroup>
+        </Col>
+
+        <Col xs={5}>
+          <FFormGroup
+            name={'tax_rate_id'}
+            label={'Tax Rate'}
+          >
+            <TaxRatesSelect
+              name={'tax_rate_id'}
+              items={taxRates}
+              allowCreate
+            />
           </FFormGroup>
         </Col>
       </Row>
