@@ -121,6 +121,7 @@ export default function OwnerContributionFormFields() {
             name={'tax_rate_id'}
             label={'Tax Rate'}
           >
+            
             <TaxRatesSelect
               name={'tax_rate_id'}
               items={taxRates}
