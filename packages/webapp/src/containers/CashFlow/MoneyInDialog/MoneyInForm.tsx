@@ -78,6 +78,7 @@ function MoneyInForm({
       ...omit(values, ['currency_code']),
       publish: true,
     };
+    console.log('Form Data:', form);
     setSubmitting(true);
     createCashflowTransactionMutate(form)
       .then(() => {

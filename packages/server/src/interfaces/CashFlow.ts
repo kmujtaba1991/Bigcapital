@@ -231,6 +231,7 @@ export interface ICashflowTransactionSchema {
   userId: number;
   publishedAt?: Date | null;
   branchId?: number;
+  tax_rate_id?: number | null;
 }
 
 export interface ICashflowTransactionInput extends ICashflowTransactionSchema {}

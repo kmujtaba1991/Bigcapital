@@ -6,7 +6,7 @@ import { useMoneyInDailogContext } from './MoneyInDialogProvider';
 import { useTaxRates } from '@/hooks/query/taxRates';
 
 const MoneyInFieldsContext = React.createContext();
-
+  
 /**
  * Money in dialog provider.
  */

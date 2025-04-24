@@ -76,18 +76,22 @@ export default class NewCashflowTransactionService {
   ): ICashflowTransactionInput => {
     const amount = newCashflowTransactionDTO.amount;
 
-    const fromDTO = pick(newCashflowTransactionDTO, [
-      'date',
-      'referenceNo',
-      'description',
-      'transactionType',
-      'exchangeRate',
-      'cashflowAccountId',
-      'creditAccountId',
-      'branchId',
-      'plaidTransactionId',
-      'uncategorizedTransactionId',
-    ]);
+    const fromDTO = {
+      ...pick(newCashflowTransactionDTO, [
+        'date',
+        'referenceNo',
+        'description',
+        'transactionType',
+        'exchangeRate',
+        'cashflowAccountId',
+        'creditAccountId',
+        'branchId',
+        'plaidTransactionId',
+        'uncategorizedTransactionId',
+      ]),
+      tax_rate_id: newCashflowTransactionDTO.taxRateId, 
+    };
+
     // Retreive the next invoice number.
     const autoNextNumber =
       this.autoIncrement.getNextTransactionNumber(tenantId);
@@ -108,8 +112,8 @@ export default class NewCashflowTransactionService {
       userId,
       ...(newCashflowTransactionDTO.publish
         ? {
-            publishedAt: new Date(),
-          }
+          publishedAt: new Date(),
+        }
         : {}),
     };
     return R.compose(
@@ -129,6 +133,7 @@ export default class NewCashflowTransactionService {
     userId?: number
   ): Promise<ICashflowTransaction> => {
     const { CashflowTransaction, Account } = this.tenancy.models(tenantId);
+
 
     // Retrieves the cashflow account or throw not found error.
     const cashflowAccount = await Account.query()
