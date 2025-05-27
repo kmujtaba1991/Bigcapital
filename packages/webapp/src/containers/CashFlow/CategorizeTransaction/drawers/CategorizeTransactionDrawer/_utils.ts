@@ -26,8 +26,10 @@ export const transformToCategorizeForm = (
 export const tranformToRequest = (
   formValues: Record<string, any>,
   uncategorizedTransactionIds: Array<number>,
+  categorizeIndividually: boolean,
 ) => {
   return {
+    categorize_individually: categorizeIndividually,
     uncategorized_transaction_ids: uncategorizedTransactionIds,
     ...transfromToSnakeCase(formValues),
   };

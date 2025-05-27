@@ -13,6 +13,7 @@ import {
 import {
   transformCategorizeTransToCashflow,
   validateUncategorizedTransactionsNotExcluded,
+  transformCategorizeSingleTransToCashflow,
 } from './utils';
 import { CommandCashflowValidator } from './CommandCasflowValidator';
 import NewCashflowTransactionService from './NewCashflowTransactionService';
@@ -34,11 +35,6 @@ export class CategorizeCashflowTransaction {
   @Inject()
   private createCashflow: NewCashflowTransactionService;
 
-  /**
-   * Categorize the given cashflow transaction.
-   * @param {number} tenantId
-   * @param {ICategorizeCashflowTransactioDTO} categorizeDTO
-   */
   public async categorize(
     tenantId: number,
     uncategorizedTransactionId: number | Array<number>,
@@ -66,55 +62,84 @@ export class CategorizeCashflowTransaction {
       oldUncategorizedTransactions,
       categorizeDTO.transactionType
     );
-    // Edits the cashflow transaction under UOW env.
-    return this.uow.withTransaction(tenantId, async (trx: Knex.Transaction) => {
-      // Triggers `onTransactionCategorizing` event.
-      await this.eventPublisher.emitAsync(
-        events.cashflow.onTransactionCategorizing,
-        {
+
+    // If categorizing individually, run one DB transaction per record
+    if (categorizeDTO.categorizeIndividually) {
+      
+
+      for (const transaction of oldUncategorizedTransactions) {
+        try {
+          await this.uow.withTransaction(tenantId, async (trx: Knex.Transaction) => {
+            
+
+            const dto = transformCategorizeSingleTransToCashflow(transaction, categorizeDTO);
+            
+
+            const cashflowTransaction = await this.createCashflow.newCashflowTransaction(tenantId, dto, trx);
+            
+
+            await UncategorizedCashflowTransaction.query(trx)
+              .where('id', transaction.id)
+              .patch({
+                categorized: true,
+                categorizeRefType: 'CashflowTransaction',
+                categorizeRefId: cashflowTransaction.id,
+              });
+
+            
+
+            await this.eventPublisher.emitAsync(events.cashflow.onTransactionCategorized, {
+              tenantId,
+              cashflowTransaction,
+              uncategorizedTransactions: [transaction],
+              oldUncategorizedTransactions: [transaction],
+              categorizeDTO,
+              trx,
+            });
+
+            
+          });
+        } catch (err) {
+          
+          throw err; // Or log and continue to next one if partial success is acceptable
+        }
+      }
+    } else {
+      // Bulk categorization (single transaction)
+      return this.uow.withTransaction(tenantId, async (trx: Knex.Transaction) => {
+        
+
+        await this.eventPublisher.emitAsync(events.cashflow.onTransactionCategorizing, {
           tenantId,
           oldUncategorizedTransactions,
           trx,
-        } as ICashflowTransactionUncategorizingPayload
-      );
-      // Transformes the categorize DTO to the cashflow transaction.
-      const cashflowTransactionDTO = transformCategorizeTransToCashflow(
-        oldUncategorizedTransactions,
-        categorizeDTO
-      );
-      // Creates a new cashflow transaction.
-      const cashflowTransaction =
-        await this.createCashflow.newCashflowTransaction(
-          tenantId,
-          cashflowTransactionDTO
-        );
+        } as ICashflowTransactionUncategorizingPayload);
 
-      // Updates the uncategorized transaction as categorized.
-      await UncategorizedCashflowTransaction.query(trx)
-        .whereIn('id', uncategorizedTransactionIds)
-        .patch({
-          categorized: true,
-          categorizeRefType: 'CashflowTransaction',
-          categorizeRefId: cashflowTransaction.id,
-        });
-      // Fetch the new updated uncategorized transactions.
-      const uncategorizedTransactions =
-        await UncategorizedCashflowTransaction.query(trx).whereIn(
+        const dto = transformCategorizeTransToCashflow(oldUncategorizedTransactions, categorizeDTO);
+        const cashflowTransaction = await this.createCashflow.newCashflowTransaction(tenantId, dto, trx);
+
+        await UncategorizedCashflowTransaction.query(trx)
+          .whereIn('id', uncategorizedTransactionIds)
+          .patch({
+            categorized: true,
+            categorizeRefType: 'CashflowTransaction',
+            categorizeRefId: cashflowTransaction.id,
+          });
+
+        const uncategorizedTransactions = await UncategorizedCashflowTransaction.query(trx).whereIn(
           'id',
           uncategorizedTransactionIds
         );
-      // Triggers `onCashflowTransactionCategorized` event.
-      await this.eventPublisher.emitAsync(
-        events.cashflow.onTransactionCategorized,
-        {
+
+        await this.eventPublisher.emitAsync(events.cashflow.onTransactionCategorized, {
           tenantId,
           cashflowTransaction,
           uncategorizedTransactions,
           oldUncategorizedTransactions,
           categorizeDTO,
           trx,
-        } as ICashflowTransactionCategorizedPayload
-      );
-    });
+        });
+      });
+    }
   }
 }
