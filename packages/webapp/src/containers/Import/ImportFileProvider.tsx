@@ -7,6 +7,9 @@ import React, {
   useState,
 } from 'react';
 
+import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
+
 export type EntityColumnField = {
   key: string;
   name: string;
@@ -50,6 +53,8 @@ interface ImportFileContextValue {
   exampleDownload?: boolean;
   exampleTitle?: string;
   exampleDescription?: string;
+
+  parseFile: (file: File) => Promise<void>;
 }
 interface ImportFileProviderProps {
   resource: string;
@@ -103,8 +108,62 @@ export const ImportFileProvider = ({
   const [entityColumns, setEntityColumns] = useState<SheetColumn[]>([]);
   const [sheetMapping, setSheetMapping] = useState<SheetMap[]>([]);
   const [importId, setImportId] = useState<string>('');
-
+  const [sheetData, setSheetData] = useState<string[][]>([]);
+  const [negateAmounts, setNegateAmounts] = useState(false);
+  
   const [step, setStep] = useState<number>(0);
+
+  const parseFile = async (file: File) => {
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    let headers: string[] = [];
+    let rows: string[][] = [];
+
+    if (ext === 'csv') {
+      const text = await file.text();
+      const parsed = Papa.parse<string[]>(text, {
+        skipEmptyLines: true,
+        header: false,
+        dynamicTyping: false,
+      });
+
+      headers = parsed.data[0].map((h) => h.trim());
+      rows = parsed.data.slice(1).map((row) =>
+        row.map((cell) =>
+          typeof cell === 'string' ? cell.replace(/(?<=\d),(?=\d)/g, '') : cell
+        )
+      );
+    } else if (ext === 'xlsx') {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 });
+      headers = (data[0] ?? []).map((h) => String(h).trim());
+      rows = (data.slice(1) as string[][]).map((row) =>
+        row.map((cell) =>
+          typeof cell === 'string' ? cell.replace(/(?<=\d),(?=\d)/g, '') : cell
+        )
+      );
+    }
+
+    
+    const amountIndex = headers.findIndex((col) =>
+      col.toLowerCase().includes('amount')
+    );
+
+    
+    if (amountIndex !== -1 && negateAmounts) {
+      rows = rows.map((row) => {
+        const raw = parseFloat(row[amountIndex]);
+        if (!isNaN(raw)) {
+          row[amountIndex] = String(raw * -1); 
+        }
+        return row;
+      });
+    }
+
+    setSheetColumns(headers);
+    setSheetData(rows); 
+  };
 
   const value = {
     sheetColumns,
@@ -135,6 +194,14 @@ export const ImportFileProvider = ({
     exampleDownload,
     exampleTitle,
     exampleDescription,
+
+    sheetData,
+    setSheetData,
+
+    negateAmounts,
+    setNegateAmounts,
+
+    parseFile,
   };
 
   return (
