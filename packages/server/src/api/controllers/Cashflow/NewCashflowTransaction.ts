@@ -42,7 +42,7 @@ export default class NewCashflowTransactionController extends BaseController {
       this.validationResult,
       this.asyncMiddleware(this.newCashflowTransaction),
       this.catchServiceErrors
-    );
+    ); 
     router.post(
       '/transactions/uncategorize/bulk',
       [
@@ -134,6 +134,7 @@ export default class NewCashflowTransactionController extends BaseController {
       check('credit_account_id').exists().isInt().toInt(),
 
       check('exchange_rate').optional().isFloat({ gt: 0 }).toFloat(),
+      check('tax_rate_id').optional({ nullable: true }).isNumeric().toInt(),
       check('branch_id').optional({ nullable: true }).isNumeric().toInt(),
       check('publish').default(false).isBoolean().toBoolean(),
     ];
@@ -152,6 +153,8 @@ export default class NewCashflowTransactionController extends BaseController {
   ) => {
     const { tenantId, userId } = req;
     const ownerContributionDTO = this.matchedBodyData(req);
+
+    
 
     try {
       const cashflowTransaction =
