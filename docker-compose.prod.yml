@@ -28,7 +28,8 @@ services:
 
   server:
     container_name: bigcapital-server
-    image: bigcapitalhq/server:latest
+    build:
+      dockerfile: packages/server/Dockerfile
     expose:
       - '3000'
     links:
