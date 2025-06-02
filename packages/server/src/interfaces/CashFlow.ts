@@ -245,6 +245,7 @@ export interface ICategorizeCashflowTransactioDTO {
   exchangeRate: number;
   description: string;
   branchId: number;
+  categorizeIndividually?: boolean;
 }
 
 export interface IUncategorizedCashflowTransaction {

@@ -11,7 +11,7 @@ import {
 import { useCategorizeTransactionBoot } from '../CategorizeTransactionBoot';
 import { CategorizeTransactionBranchField } from '../CategorizeTransactionBranchField';
 
-export default function CategorizeTransactionToAccount() {
+export default function CategorizeTransactionToAccount({ categorizeIndividually }) {
   const { accounts } = useCategorizeTransactionBoot();
 
   return (
@@ -62,14 +62,16 @@ export default function CategorizeTransactionToAccount() {
         <FInputGroup name={'reference_no'} fill />
       </FFormGroup>
 
-      <FFormGroup name={'description'} label={'Description'} fastField inline>
-        <FTextArea
-          name={'description'}
-          growVertically={true}
-          large={true}
-          fill={true}
-        />
-      </FFormGroup>
+      {!categorizeIndividually && (
+        <FFormGroup name={'description'} label={'Description'} fastField inline>
+          <FTextArea
+            name={'description'}
+            growVertically={true}
+            large={true}
+            fill={true}
+          />
+        </FFormGroup>
+      )}
 
       <CategorizeTransactionBranchField />
     </>

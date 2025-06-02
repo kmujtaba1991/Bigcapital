@@ -14,6 +14,9 @@ import { withBankingActions } from '@/containers/CashFlow/withBankingActions';
 import { AppToaster } from '@/components';
 import { useCategorizeTransactionTabsBoot } from '@/containers/CashFlow/CategorizeTransactionAside/CategorizeTransactionTabsBoot';
 import { compose } from '@/utils';
+import { useSelector } from 'react-redux';
+import { getCategorizeIndividually } from '@/store/banking/banking.reducer';
+
 
 /**
  * Categorize cashflow transaction form dialog content.
@@ -24,14 +27,14 @@ function CategorizeTransactionFormRoot({
 }) {
   const { uncategorizedTransactionIds } = useCategorizeTransactionTabsBoot();
   const { mutateAsync: categorizeTransaction } = useCategorizeTransaction();
+  const categorizeIndividually = useSelector(getCategorizeIndividually);
 
   // Form initial values in create and edit mode.
   const initialValues = useCategorizeTransactionFormInitialValues();
 
   // Callbacks handles form submit.
   const handleFormSubmit = (values, { setSubmitting, setErrors }) => {
-    const _values = tranformToRequest(values, uncategorizedTransactionIds);
-
+    const _values = tranformToRequest(values, uncategorizedTransactionIds, categorizeIndividually);
     setSubmitting(true);
     categorizeTransaction(_values)
       .then(() => {

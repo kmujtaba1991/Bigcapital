@@ -9,8 +9,10 @@ import {
 import { CategorizeTransactionTabsBoot } from './CategorizeTransactionTabsBoot';
 import { withBanking } from '../withBanking';
 import { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { setCategorizeIndividually } from '@/store/banking/banking.reducer';
 
-interface CategorizeTransactionAsideProps extends WithBankingActionsProps {}
+interface CategorizeTransactionAsideProps extends WithBankingActionsProps { }
 
 function CategorizeTransactionAsideRoot({
   // #withBankingActions
@@ -22,6 +24,7 @@ function CategorizeTransactionAsideRoot({
   resetTransactionsToCategorizeSelected,
   enableMultipleCategorization,
 }: CategorizeTransactionAsideProps) {
+  const dispatch = useDispatch();
   //
   useEffect(
     () => () => {
@@ -33,6 +36,8 @@ function CategorizeTransactionAsideRoot({
 
       // Disable multi matching.
       enableMultipleCategorization(false);
+
+      dispatch(setCategorizeIndividually({ enable: false }));
     },
     [
       closeReconcileMatchingTransaction,
