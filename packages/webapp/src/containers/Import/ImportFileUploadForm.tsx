@@ -8,6 +8,8 @@ import { useImportFileContext } from './ImportFileProvider';
 import { ImportAlert, ImportStepperStep } from './_types';
 import { useAlertsManager } from './AlertsManager';
 import { transformToCamelCase } from '@/utils';
+import * as Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 
 const initialValues = {
   file: null,
@@ -33,6 +35,8 @@ export function ImportFileUploadForm({
   const { showAlert, hideAlerts } = useAlertsManager();
   const { mutateAsync: uploadImportFile } = useImportFileUpload();
   const {
+    sheetColumns,
+    sheetData,
     resource,
     params,
     setStep,
@@ -40,6 +44,30 @@ export function ImportFileUploadForm({
     setEntityColumns,
     setImportId,
   } = useImportFileContext();
+
+  const exportSheetDataAsFile = (
+  sheetColumns: string[],
+  sheetData: string[][],
+  fileType: 'xlsx' | 'csv'
+): File => {
+  if (fileType === 'csv') {
+    const csvData = Papa.unparse([sheetColumns, ...sheetData]);
+    return new File([csvData], 'updated-import.csv', { type: 'text/csv' });
+  }
+
+  const worksheet = XLSX.utils.aoa_to_sheet([sheetColumns, ...sheetData]);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
+  
+  const fileArrayBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  const fileBlob = new Blob([fileArrayBuffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+
+  return new File([fileBlob], 'updated-import.xlsx', {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+};
 
   const handleSubmit = async (
     values: ImportFileUploadValues,
@@ -50,85 +78,12 @@ export function ImportFileUploadForm({
 
     setSubmitting(true);
 
-    const fileText = await values.file.text();
-    const lines = fileText.trim().split('\n');
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const originalFileExtension = values.file.name.split('.').pop()?.toLowerCase();
 
-    const inflowIndex = headers.findIndex(h => ['credit', 'deposit'].includes(h));
-    const outflowIndex = headers.findIndex(h => ['debit', 'withdrawal'].includes(h));
-
-
-    const parseCsvLine = (line: string): string[] => {
-      const result = [];
-      let current = '';
-      let insideQuotes = false;
-
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        if (char === '"' && line[i + 1] === '"') {
-          current += '"';
-          i++;
-        } else if (char === '"') {
-          insideQuotes = !insideQuotes;
-        } else if (char === ',' && !insideQuotes) {
-          result.push(current);
-          current = '';
-        } else {
-          current += char;
-        }
-      }
-      result.push(current);
-      return result.map(field => field.trim());
-    };
-
-    const cleanNumber = (str: string) =>
-      parseFloat(str.replace(/,/g, '').trim()) || 0;
-
-    let finalFile = values.file; // default to original
-
-    const safeNumber = (str: string): number => {
-      const cleaned = str?.replace(/,/g, '').trim();
-      const parsed = parseFloat(cleaned);
-      return isNaN(parsed) ? 0 : parsed;
-    };
-
-    if (inflowIndex !== -1 && outflowIndex !== -1) {
-      const newHeaders = headers.filter((_, i) => i !== inflowIndex && i !== outflowIndex);
-      newHeaders.push('Amount');
-
-      const newRows = lines.slice(1).map((line, index) => {
-        const values = parseCsvLine(line);
-        if (!values || values.length <= Math.max(inflowIndex, outflowIndex)) return null;
-
-        const inflowStr = values[inflowIndex] ?? '';
-        const outflowStr = values[outflowIndex] ?? '';
-
-        const inflow = cleanNumber(inflowStr);
-        const outflow = cleanNumber(outflowStr);
-
-        const hasInflow = !isNaN(inflow) && inflow !== 0;
-        const hasOutflow = !isNaN(outflow) && outflow !== 0;
-
-        let amount = 0;
-        if (hasInflow) {
-          amount = inflow;
-        } else if (hasOutflow) {
-          amount = -outflow;
-        }
-
-        const baseValues = values.filter((_, i) => i !== inflowIndex && i !== outflowIndex);
-        baseValues.push(amount.toFixed(2));
-        return baseValues.map(v => `"${v.replace(/"/g, '""')}"`).join(',');
-      }).filter(Boolean);
-
-
-      const newCsv = [newHeaders.join(','), ...newRows].join('\n');
-      const blob = new Blob([newCsv], { type: 'text/csv' });
-      finalFile = new File([blob], 'transformed.csv', { type: 'text/csv' });
-    }
+    const updatedFile = exportSheetDataAsFile(sheetColumns, sheetData, originalFileExtension);
 
     const formData = new FormData();
-    formData.append('file', finalFile);
+    formData.append('file', updatedFile);
     formData.append('resource', resource);
     formData.append('params', JSON.stringify(params));
 

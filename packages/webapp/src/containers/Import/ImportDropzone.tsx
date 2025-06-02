@@ -4,9 +4,12 @@ import { Box, Group, Stack } from '@/components';
 import styles from './ImportDropzone.module.css';
 import { ImportDropzoneField } from './ImportDropzoneFile';
 import { useAlertsManager } from './AlertsManager';
+import { useImportFileContext } from './ImportFileProvider';
+
 
 export function ImportDropzone() {
   const { hideAlerts } = useAlertsManager();
+  const { parseFile } = useImportFileContext();
 
   return (
     <Stack spacing={0}>
@@ -19,6 +22,7 @@ export function ImportDropzone() {
             onChange={(file) => {
               hideAlerts();
               form.setFieldValue('file', file);
+              parseFile(file);
             }}
           />
         )}
