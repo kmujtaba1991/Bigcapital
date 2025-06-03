@@ -20,15 +20,14 @@ services:
 
   webapp:
     container_name: bigcapital-webapp
-    build:
-      dockerfile: packages/webapp/Dockerfile # Path to the webapp folder where the Dockerfile is located
+    image: bigcapitalacr.azurecr.io/webapp
     restart: on-failure
     networks:
       - bigcapital_network
 
   server:
     container_name: bigcapital-server
-    image: bigcapitalhq/server:latest
+    image: bigcapitalacr.azurecr.io/server # Path to the webapp folder where the Dockerfile is located
     expose:
       - '3000'
     links:
@@ -124,11 +123,9 @@ services:
       - S3_ENDPOINT=${S3_ENDPOINT}
       - S3_BUCKET=${S3_BUCKET}
 
-  database_migration:
+  migration:
     container_name: bigcapital-database-migration
-    build:
-      context: ./
-      dockerfile: docker/migration/Dockerfile
+    image: bigcapitalacr.azurecr.io/database-migration:latest
     environment:
       # Database
       - DB_HOST=mysql

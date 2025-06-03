@@ -22,6 +22,9 @@ export function useImportFileUpload(props = {}) {
   const queryClient = useQueryClient();
   const apiRequest = useApiRequest();
 
+  console.log('useImportFileUpload')
+  console.log(props)
+
   return useMutation((values) => apiRequest.post(`import/file`, values), {
     onSuccess: (res, id) => {
       // Invalidate queries.
@@ -33,6 +36,9 @@ export function useImportFileUpload(props = {}) {
 export function useImportFileMapping(props = {}) {
   const queryClient = useQueryClient();
   const apiRequest = useApiRequest();
+
+  console.log('useImportFileMapping')
+  console.log(props)
 
   return useMutation(
     ([importId, values]) =>
@@ -76,6 +82,8 @@ export function useImportFileMeta(importId: string, props = {}) {
 export function useImportFileProcess(props = {}) {
   const queryClient = useQueryClient();
   const apiRequest = useApiRequest();
+
+  console.log('calling import/:id/import')
 
   return useMutation(
     (importId) => apiRequest.post(`import/${importId}/import`),

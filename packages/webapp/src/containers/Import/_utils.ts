@@ -33,6 +33,9 @@ type ImportFileMappingRes = { from: string; to: string; group: string }[];
 export const transformValueToReq = (
   value: ImportFileMappingFormValues,
 ): { mapping: ImportFileMappingRes[] } => {
+
+  console.log("before transformation value: ", value);
+
   const mapping = chain(value)
     .thru(deepdash.index)
     .pickBy((_value, key) => !isEmpty(get(value, key)))
@@ -42,6 +45,9 @@ export const transformValueToReq = (
       group: key.includes('.') ? head(key.split('.')) : '',
     }))
     .value();
+
+    console.log("after transformation value: ", mapping);
+
 
   return { mapping };
 };

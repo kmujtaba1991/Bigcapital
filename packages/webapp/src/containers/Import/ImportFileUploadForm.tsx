@@ -45,6 +45,9 @@ export function ImportFileUploadForm({
     values: ImportFileUploadValues,
     { setSubmitting }: FormikHelpers<ImportFileUploadValues>,
   ) => {
+
+    console.log('Handle submit invoked...')
+    
     hideAlerts();
     if (!values.file) return;
 

@@ -130,6 +130,8 @@ export default class NewCashflowTransactionService {
   ): Promise<ICashflowTransaction> => {
     const { CashflowTransaction, Account } = this.tenancy.models(tenantId);
 
+// eslint-disable-next-line no-console
+
     // Retrieves the cashflow account or throw not found error.
     const cashflowAccount = await Account.query()
       .findById(newTransactionDTO.cashflowAccountId)
@@ -150,6 +152,9 @@ export default class NewCashflowTransactionService {
       cashflowAccount,
       userId
     );
+
+    // cashflowTransactionObj.tax_rate_id = 2;
+
     // Creates a new cashflow transaction under UOW envirement.
     return this.uow.withTransaction(tenantId, async (trx: Knex.Transaction) => {
       // Triggers `onCashflowTransactionCreate` event.

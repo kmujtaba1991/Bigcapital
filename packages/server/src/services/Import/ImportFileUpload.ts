@@ -82,8 +82,13 @@ export class ImportFileUploadService {
     // Throws service error if the sheet data is empty.
     validateSheetEmpty(sheetData);
 
+    console.log('Sheet data: ', sheetData)
+
     const sheetColumns = this.importFileCommon.parseSheetColumns(sheetData);
     const coumnsStringified = JSON.stringify(sheetColumns);
+
+    console.log('Sheet columns: ', sheetColumns)
+
 
     try {
       // Validates the params Yup schema.

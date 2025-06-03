@@ -80,9 +80,14 @@ export class ImportController extends BaseController {
    * @param {NextFunction} next -
    */
   private async fileUpload(req: Request, res: Response, next: NextFunction) {
+
+    console.log('file Upload function executed..')
+
     const { tenantId } = req;
     const body = this.matchedBodyData(req);
     const params = defaultTo(parseJsonSafe(body.params), {});
+
+    console.log('file body', body)
 
     try {
       const data = await this.importResourceApp.import(
