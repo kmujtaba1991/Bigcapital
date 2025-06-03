@@ -7,6 +7,8 @@ import { getAddMoneyInOptions, getAddMoneyOutOptions } from '@/constants';
 import { useFormikContext } from 'formik';
 import { useCategorizeTransactionTabsBoot } from '@/containers/CashFlow/CategorizeTransactionAside/CategorizeTransactionTabsBoot';
 import { useCategorizeTransactionBoot } from './CategorizeTransactionBoot';
+import { useSelector } from 'react-redux';
+import { getCategorizeIndividually } from '@/store/banking/banking.reducer';
 
 // Retrieves the add money in button options.
 const MoneyInOptions = getAddMoneyInOptions();
@@ -20,6 +22,7 @@ const Title = styled('h3')`
 
 export function CategorizeTransactionFormContent() {
   const { autofillCategorizeValues } = useCategorizeTransactionBoot();
+  const categorizeIndividually = useSelector(getCategorizeIndividually);
 
   const transactionTypes = autofillCategorizeValues?.isDepositTransaction
     ? MoneyInOptions
@@ -29,9 +32,11 @@ export function CategorizeTransactionFormContent() {
 
   return (
     <Box style={{ flex: 1, margin: 20 }}>
-      <FormGroup label={'Amount'} inline>
-        <Title>{formattedAmount}</Title>
-      </FormGroup>
+      {!categorizeIndividually && (
+        <FormGroup label={'Amount'} inline>
+          <Title>{formattedAmount}</Title>
+        </FormGroup>
+      )}
 
       <FFormGroup name={'category'} label={'Category'} fastField inline>
         <FSelect
@@ -75,25 +80,21 @@ const CategorizeTransactionOwnerDrawings = React.lazy(
 
 function CategorizeTransactionFormSubContent() {
   const { values } = useFormikContext();
+  const categorizeIndividually = useSelector(getCategorizeIndividually);
 
-  // Other expense.
+  
   if (values.transactionType === 'other_expense') {
-    return <CategorizeTransactionOtherExpense />;
-    // Owner contribution.
+    return <CategorizeTransactionOtherExpense categorizeIndividually={categorizeIndividually} />;
   } else if (values.transactionType === 'owner_contribution') {
-    return <CategorizeTransactionOwnerContribution />;
-    // Other Income.
+    return <CategorizeTransactionOwnerContribution categorizeIndividually={categorizeIndividually} />;
   } else if (values.transactionType === 'other_income') {
-    return <CategorizeTransactionOtherIncome />;
-    // Transfer from account.
+    return <CategorizeTransactionOtherIncome categorizeIndividually={categorizeIndividually} />;
   } else if (values.transactionType === 'transfer_from_account') {
-    return <CategorizeTransactionTransferFrom />;
-    // Transfer to account.
+    return <CategorizeTransactionTransferFrom categorizeIndividually={categorizeIndividually} />;
   } else if (values.transactionType === 'transfer_to_account') {
-    return <CategorizeTransactionToAccount />;
-    // Owner drawings.
+    return <CategorizeTransactionToAccount categorizeIndividually={categorizeIndividually} />;
   } else if (values.transactionType === 'OwnerDrawing') {
-    return <CategorizeTransactionOwnerDrawings />;
+    return <CategorizeTransactionOwnerDrawings categorizeIndividually={categorizeIndividually} />;
   }
   return null;
 }

@@ -49,6 +49,9 @@ import { withBankingActions } from '../withBankingActions';
 import { withBanking } from '../withBanking';
 import withAlertActions from '@/containers/Alert/withAlertActions';
 import { DialogsName } from '@/constants/dialogs';
+import { useSetTransactionsToCategorizeSelected } from '@/hooks/state/banking';
+import { useDispatch } from 'react-redux';
+import { enableMultipleCategorization, setUncategorizedTransactionIdForMatching, setCategorizeIndividually } from '@/store/banking/banking.reducer';
 
 function AccountTransactionsActionsBar({
   // #withDialogActions
@@ -87,6 +90,10 @@ function AccountTransactionsActionsBar({
   const isFeedsActive = !!currentAccount.is_feeds_active;
   const isFeedsPaused = currentAccount.is_feeds_paused;
   const isSyncingOwner = currentAccount.is_syncing_owner;
+
+  // Retrieves the plaid token.
+  const dispatch = useDispatch();
+  const setTransactionsToCategorizeSelected = useSetTransactionsToCategorizeSelected();
 
   // Handle table row size change.
   const handleTableRowSizeChange = (size) => {
@@ -173,6 +180,15 @@ function AccountTransactionsActionsBar({
       });
   };
 
+  const handleCategorizeBulkClick = () => {
+    if (!isEmpty(uncategorizedTransationsIdsSelected)) {
+      setTransactionsToCategorizeSelected(uncategorizedTransationsIdsSelected);
+      dispatch(enableMultipleCategorization({ enable: true }));
+      dispatch(setCategorizeIndividually({ enable: true }));
+      dispatch(setUncategorizedTransactionIdForMatching(uncategorizedTransationsIdsSelected[0]));
+    }
+  };
+
   // Handles the unexclude categorized button click.
   const handleUnexcludeUncategorizedBtnClick = () => {
     unexcludeUncategorizedTransactions({
@@ -194,7 +210,9 @@ function AccountTransactionsActionsBar({
 
   // Handle multi select transactions for categorization or matching.
   const handleMultipleCategorizingSwitch = (event) => {
-    enableMultipleCategorization(event.currentTarget.checked);
+    const enable = event.currentTarget.checked;
+    dispatch(enableMultipleCategorization({ enable }));
+      dispatch(setCategorizeIndividually({ enable: false }));
   };
   // Handle resume bank feeds syncing.
   const handleResumeFeedsSyncing = () => {
@@ -290,6 +308,15 @@ function AccountTransactionsActionsBar({
           </Tooltip>
         </If>
 
+        {!isEmpty(uncategorizedTransationsIdsSelected) && (
+          <Button
+            icon={<Icon icon="primary" iconSize={16} />}
+            text={'Categorize bulk'}
+            onClick={handleCategorizeBulkClick}
+            className={Classes.MINIMAL}
+            intent={Intent.Primary}
+          />
+        )}
         {!isEmpty(uncategorizedTransationsIdsSelected) && (
           <Button
             icon={<Icon icon="disable" iconSize={16} />}

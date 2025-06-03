@@ -113,6 +113,7 @@ export default class NewCashflowTransactionController extends BaseController {
       check('exchange_rate').optional().isFloat({ gt: 0 }).toFloat(),
       check('description').optional(),
       check('branch_id').optional({ nullable: true }).isNumeric().toInt(),
+      check('categorize_individually').optional().isBoolean().toBoolean(),
     ];
   }
 
@@ -134,6 +135,7 @@ export default class NewCashflowTransactionController extends BaseController {
       check('credit_account_id').exists().isInt().toInt(),
 
       check('exchange_rate').optional().isFloat({ gt: 0 }).toFloat(),
+      check('tax_rate_id').optional({ nullable: true }).isNumeric().toInt(),
       check('branch_id').optional({ nullable: true }).isNumeric().toInt(),
       check('publish').default(false).isBoolean().toBoolean(),
     ];
@@ -152,6 +154,8 @@ export default class NewCashflowTransactionController extends BaseController {
   ) => {
     const { tenantId, userId } = req;
     const ownerContributionDTO = this.matchedBodyData(req);
+
+
 
     try {
       const cashflowTransaction =
@@ -235,12 +239,15 @@ export default class NewCashflowTransactionController extends BaseController {
   ) => {
     const { tenantId } = req;
     const matchedObject = this.matchedBodyData(req);
+    const uncategorizedTransactionIds = matchedObject.uncategorizedTransactionIds;
+    const categorizeIndividually = matchedObject.categorize_individually ?? matchedObject.categorizeIndividually ?? false;
+
     const categorizeDTO = omit(matchedObject, [
       'uncategorizedTransactionIds',
+      'categorize_individually',
     ]) as ICategorizeCashflowTransactioDTO;
 
-    const uncategorizedTransactionIds =
-      matchedObject.uncategorizedTransactionIds;
+    categorizeDTO.categorizeIndividually = categorizeIndividually;
 
     try {
       await this.cashflowApplication.categorizeTransaction(

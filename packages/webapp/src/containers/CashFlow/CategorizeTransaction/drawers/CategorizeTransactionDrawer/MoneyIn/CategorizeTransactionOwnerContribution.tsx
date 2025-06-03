@@ -11,7 +11,7 @@ import {
 import { useCategorizeTransactionBoot } from '../CategorizeTransactionBoot';
 import { CategorizeTransactionBranchField } from '../CategorizeTransactionBranchField';
 
-export default function CategorizeTransactionOwnerContribution() {
+export default function CategorizeTransactionOwnerContribution({ categorizeIndividually }) {
   const { accounts } = useCategorizeTransactionBoot();
 
   return (
@@ -62,9 +62,11 @@ export default function CategorizeTransactionOwnerContribution() {
         <FInputGroup name={'reference_no'} fill />
       </FFormGroup>
 
-      <FFormGroup name={'description'} label={'Description'} fastField inline>
-        <FTextArea name={'description'} growVertically large fill />
-      </FFormGroup>
+      {!categorizeIndividually && (
+        <FFormGroup name={'description'} label={'Description'} fastField inline>
+          <FTextArea name={'description'} growVertically large fill />
+        </FFormGroup>
+      )}
 
       <CategorizeTransactionBranchField />
     </>

@@ -8,6 +8,8 @@ import { useImportFileContext } from './ImportFileProvider';
 import { ImportAlert, ImportStepperStep } from './_types';
 import { useAlertsManager } from './AlertsManager';
 import { transformToCamelCase } from '@/utils';
+import * as Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 
 const initialValues = {
   file: null,
@@ -33,6 +35,8 @@ export function ImportFileUploadForm({
   const { showAlert, hideAlerts } = useAlertsManager();
   const { mutateAsync: uploadImportFile } = useImportFileUpload();
   const {
+    sheetColumns,
+    sheetData,
     resource,
     params,
     setStep,
@@ -41,7 +45,31 @@ export function ImportFileUploadForm({
     setImportId,
   } = useImportFileContext();
 
-  const handleSubmit = (
+  const exportSheetDataAsFile = (
+  sheetColumns: string[],
+  sheetData: string[][],
+  fileType: 'xlsx' | 'csv'
+): File => {
+  if (fileType === 'csv') {
+    const csvData = Papa.unparse([sheetColumns, ...sheetData]);
+    return new File([csvData], 'updated-import.csv', { type: 'text/csv' });
+  }
+
+  const worksheet = XLSX.utils.aoa_to_sheet([sheetColumns, ...sheetData]);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
+  
+  const fileArrayBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  const fileBlob = new Blob([fileArrayBuffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+
+  return new File([fileBlob], 'updated-import.xlsx', {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+};
+
+  const handleSubmit = async (
     values: ImportFileUploadValues,
     { setSubmitting }: FormikHelpers<ImportFileUploadValues>,
   ) => {
@@ -52,8 +80,13 @@ export function ImportFileUploadForm({
     if (!values.file) return;
 
     setSubmitting(true);
+
+    const originalFileExtension = values.file.name.split('.').pop()?.toLowerCase();
+
+    const updatedFile = exportSheetDataAsFile(sheetColumns, sheetData, originalFileExtension);
+
     const formData = new FormData();
-    formData.append('file', values.file);
+    formData.append('file', updatedFile);
     formData.append('resource', resource);
     formData.append('params', JSON.stringify(params));
 

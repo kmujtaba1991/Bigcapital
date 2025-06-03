@@ -7,13 +7,14 @@ import { withBanking } from '@/containers/CashFlow/withBanking';
 
 function CategorizeTransactionContentRoot({
   transactionsToCategorizeIdsSelected,
+  onlyCategorize, 
 }) {
   return (
     <CategorizeTransactionBoot
       uncategorizedTransactionsIds={transactionsToCategorizeIdsSelected}
     >
       <CategorizeTransactionDrawerBody>
-        <CategorizeTransactionForm />
+        <CategorizeTransactionForm onlyCategorize={onlyCategorize} /> 
       </CategorizeTransactionDrawerBody>
     </CategorizeTransactionBoot>
   );
@@ -22,7 +23,7 @@ function CategorizeTransactionContentRoot({
 export const CategorizeTransactionContent = R.compose(
   withBanking(({ transactionsToCategorizeIdsSelected }) => ({
     transactionsToCategorizeIdsSelected,
-  })),
+  }))
 )(CategorizeTransactionContentRoot);
 
 const CategorizeTransactionDrawerBody = styled.div`

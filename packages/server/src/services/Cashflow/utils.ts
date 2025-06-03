@@ -73,6 +73,25 @@ export const transformCategorizeTransToCashflow = (
     publish: true,
   };
 };
+export const transformCategorizeSingleTransToCashflow = (
+  uncategorizeTransaction: IUncategorizedCashflowTransaction,
+  categorizeDTO: ICategorizeCashflowTransactioDTO
+): ICashflowNewCommandDTO => {
+  return {
+    date: categorizeDTO.date,
+    amount: uncategorizeTransaction.amount,
+    referenceNo: categorizeDTO.referenceNo,
+    description: categorizeDTO.description,
+    cashflowAccountId: uncategorizeTransaction.accountId,
+    creditAccountId: categorizeDTO.creditAccountId,
+    exchangeRate: categorizeDTO.exchangeRate || 1,
+    currencyCode: uncategorizeTransaction.currencyCode,
+    transactionNumber: categorizeDTO.transactionNumber,
+    transactionType: categorizeDTO.transactionType,
+    branchId: categorizeDTO?.branchId,
+    publish: true,
+  };
+};
 
 export const validateUncategorizedTransactionsNotExcluded = (
   transactions: Array<UncategorizeCashflowTransaction>
