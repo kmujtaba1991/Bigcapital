@@ -1,12 +1,148 @@
-# WARNING!
-# This is a development version of THE Bigcapital docker-compose.yml file.
-# Avoid using this file in your production environment.
-# We're exposing here sensitive ports and mounting code volumes for rapid development and debugging of the server stack.
+# This is a production version of the Bigcapital docker-compose.yml file.
 
 version: '3.3'
 
 services:
-  mariadb:
+  proxy:
+    image: envoyproxy/envoy:v1.30-latest
+    depends_on:
+      - server
+      - webapp
+    ports:
+      - '${PUBLIC_PROXY_PORT:-80}:80'
+      - '${PUBLIC_PROXY_SSL_PORT:-443}:443'
+    tty: true
+    volumes:
+      - ./docker/envoy/envoy.yaml:/etc/envoy/envoy.yaml
+    restart: on-failure
+    networks:
+      - bigcapital_network
+
+  webapp:
+    container_name: bigcapital-webapp
+    image: bigcapitalacr.azurecr.io/webapp
+    restart: on-failure
+    networks:
+      - bigcapital_network
+
+  server:
+    container_name: bigcapital-server
+    image: bigcapitalacr.azurecr.io/server # Path to the webapp folder where the Dockerfile is located
+    expose:
+      - '3000'
+    links:
+      - mysql
+      - mongo
+      - redis
+    depends_on:
+      - mysql
+      - mongo
+      - redis
+    restart: on-failure
+    networks:
+      - bigcapital_network
+    environment:
+      # Mail
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_SECURE=${MAIL_SECURE}
+      - MAIL_FROM_NAME=${MAIL_FROM_NAME}
+      - MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS}
+
+      # Database
+      - DB_HOST=mysql
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_CHARSET=${DB_CHARSET}
+
+      # System database
+      - SYSTEM_DB_NAME=${SYSTEM_DB_NAME}
+
+      # Tenants databases
+      - TENANT_DB_NAME_PERFIX=${TENANT_DB_NAME_PERFIX}
+
+      # Authentication
+      - JWT_SECRET=${JWT_SECRET}
+
+      # MongoDB
+      - MONGODB_DATABASE_URL=mongodb://mongo/bigcapital
+
+      # Application
+      - BASE_URL=${BASE_URL}
+
+      # Agendash
+      - AGENDASH_AUTH_USER=${AGENDASH_AUTH_USER}
+      - AGENDASH_AUTH_PASSWORD=${AGENDASH_AUTH_PASSWORD}
+
+      # Sign-up restrictions
+      - SIGNUP_DISABLED=${SIGNUP_DISABLED}
+      - SIGNUP_ALLOWED_DOMAINS=${SIGNUP_ALLOWED_DOMAINS}
+      - SIGNUP_ALLOWED_EMAILS=${SIGNUP_ALLOWED_EMAILS}
+
+      # Sign-up email confirmation
+      - SIGNUP_EMAIL_CONFIRMATION=${SIGNUP_EMAIL_CONFIRMATION}
+
+      # Gotenberg (Pdf generator)
+      - GOTENBERG_URL=${GOTENBERG_URL}
+      - GOTENBERG_DOCS_URL=${GOTENBERG_DOCS_URL}
+
+      # Exchange Rate
+      - EXCHANGE_RATE_SERVICE=${EXCHANGE_RATE_SERVICE}
+      - OPEN_EXCHANGE_RATE_APP_ID-${OPEN_EXCHANGE_RATE_APP_ID}
+
+      # Bank Sync
+      - BANKING_CONNECT=${BANKING_CONNECT}
+
+      # Plaid
+      - PLAID_ENV=${PLAID_ENV}
+      - PLAID_CLIENT_ID=${PLAID_CLIENT_ID}
+      - PLAID_SECRET=${PLAID_SECRET}
+      - PLAID_LINK_WEBHOOK=${PLAID_LINK_WEBHOOK}
+
+      # Lemon Squeez
+      - LEMONSQUEEZY_API_KEY=${LEMONSQUEEZY_API_KEY}
+      - LEMONSQUEEZY_STORE_ID=${LEMONSQUEEZY_STORE_ID}
+      - LEMONSQUEEZY_WEBHOOK_SECRET=${LEMONSQUEEZY_WEBHOOK_SECRET}
+      - HOSTED_ON_BIGCAPITAL_CLOUD=${HOSTED_ON_BIGCAPITAL_CLOUD}
+
+      # New Relic matrics tracking.
+      - NEW_RELIC_DISTRIBUTED_TRACING_ENABLED=${NEW_RELIC_DISTRIBUTED_TRACING_ENABLED}
+      - NEW_RELIC_LOG=${NEW_RELIC_LOG}
+      - NEW_RELIC_AI_MONITORING_ENABLED=${NEW_RELIC_AI_MONITORING_ENABLED}
+      - NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_SAMPLES_STORED=${NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_SAMPLES_STORED}
+      - NEW_RELIC_SPAN_EVENTS_MAX_SAMPLES_STORED=${NEW_RELIC_SPAN_EVENTS_MAX_SAMPLES_STORED}
+      - NEW_RELIC_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
+      - NEW_RELIC_APP_NAME=${NEW_RELIC_APP_NAME}
+
+      # S3
+      - S3_REGION=${S3_REGION}
+      - S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID}
+      - S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_BUCKET=${S3_BUCKET}
+
+  migration:
+    container_name: bigcapital-database-migration
+    image: bigcapitalacr.azurecr.io/database-migration:latest
+    environment:
+      # Database
+      - DB_HOST=mysql
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_CHARSET=${DB_CHARSET}
+      - SYSTEM_DB_NAME=${SYSTEM_DB_NAME}
+      # Tenants databases
+      - TENANT_DB_NAME_PERFIX=${TENANT_DB_NAME_PERFIX}
+    depends_on:
+      - mysql
+    networks:
+      - bigcapital_network
+
+  mysql:
+    container_name: bigcapital-mysql
+    restart: on-failure
     build:
       context: ./docker/mariadb
     environment:
@@ -18,50 +154,54 @@ services:
       - mysql:/var/lib/mysql
     expose:
       - '3306'
-    ports:
-      - '3306:3306'
-    deploy:
-      restart_policy:
-        condition: unless-stopped
+    networks:
+      - bigcapital_network
 
   mongo:
+    container_name: bigcapital-mongo
+    restart: on-failure
     build: ./docker/mongo
     expose:
       - '27017'
     volumes:
       - mongo:/var/lib/mongodb
-    ports:
-      - '27017:27017'
-    deploy:
-      restart_policy:
-        condition: unless-stopped
+    networks:
+      - bigcapital_network
 
   redis:
+    container_name: bigcapital-redis
+    restart: on-failure
     build:
       context: ./docker/redis
     expose:
-      - "6379"
+      - '6379'
     volumes:
       - redis:/data
-    deploy:
-      restart_policy:
-        condition: unless-stopped
+    networks:
+      - bigcapital_network
 
   gotenberg:
     image: gotenberg/gotenberg:7
-    ports:
-      - "9000:3000"
+    expose:
+      - '9000'
+    networks:
+      - bigcapital_network
 
 # Volumes
 volumes:
   mysql:
-    name: bigcapital_dev_mysql
+    name: bigcapital_prod_mysql
     driver: local
 
   mongo:
-    name: bigcapital_dev_mongo
+    name: bigcapital_prod_mongo
     driver: local
 
   redis:
-    name: bigcapital_dev_redis
+    name: bigcapital_prod_redis
     driver: local
+
+# Networks
+networks:
+  bigcapital_network:
+    driver: bridge

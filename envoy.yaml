@@ -37,7 +37,9 @@ static_resources:
       dns_lookup_family: V4_ONLY
       lb_policy: ROUND_ROBIN
       transport_socket:
-        name: envoy.transport_sockets.raw_buffer
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
       load_assignment:
         cluster_name: dynamic_server
         endpoints:
@@ -46,7 +48,7 @@ static_resources:
                   address:
                     socket_address:
                       address: server.orangeisland-7cf20041.canadacentral.azurecontainerapps.io
-                      port_value: 80
+                      port_value: 443
 
     - name: webapp
       connect_timeout: 0.25s
@@ -54,7 +56,9 @@ static_resources:
       dns_lookup_family: V4_ONLY
       lb_policy: ROUND_ROBIN
       transport_socket:
-        name: envoy.transport_sockets.raw_buffer
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
       load_assignment:
         cluster_name: webapp
         endpoints:
@@ -63,4 +67,4 @@ static_resources:
                   address:
                     socket_address:
                       address: webapp.orangeisland-7cf20041.canadacentral.azurecontainerapps.io
-                      port_value: 80
+                      port_value: 443

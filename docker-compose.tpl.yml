@@ -1,0 +1,5 @@
+webapp:
+  image: bigcapitalacr.azurecr.io/webapp:__VERSION__
+
+server:
+  image: bigcapitalacr.azurecr.io/server:__VERSION__
