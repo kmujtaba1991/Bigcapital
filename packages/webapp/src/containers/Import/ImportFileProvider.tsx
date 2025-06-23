@@ -110,59 +110,90 @@ export const ImportFileProvider = ({
   const [importId, setImportId] = useState<string>('');
   const [sheetData, setSheetData] = useState<string[][]>([]);
   const [negateAmounts, setNegateAmounts] = useState(false);
-  
+  const [isParsing, setIsParsing] = useState(false);
   const [step, setStep] = useState<number>(0);
 
   const parseFile = async (file: File) => {
-    const ext = file.name.split('.').pop()?.toLowerCase();
+    setIsParsing(true);
+    let finalFile = file;
     let headers: string[] = [];
     let rows: string[][] = [];
 
-    if (ext === 'csv') {
-      const text = await file.text();
-      const parsed = Papa.parse<string[]>(text, {
-        skipEmptyLines: true,
-        header: false,
-        dynamicTyping: false,
-      });
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    try {
+      if (ext === 'pdf') {
+        const formData = new FormData();
+        formData.append('file', file);
 
-      headers = parsed.data[0].map((h) => h.trim());
-      rows = parsed.data.slice(1).map((row) =>
-        row.map((cell) =>
-          typeof cell === 'string' ? cell.replace(/(?<=\d),(?=\d)/g, '') : cell
-        )
-      );
-    } else if (ext === 'xlsx') {
-      const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: 'array' });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const data = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 });
-      headers = (data[0] ?? []).map((h) => String(h).trim());
-      rows = (data.slice(1) as string[][]).map((row) =>
-        row.map((cell) =>
-          typeof cell === 'string' ? cell.replace(/(?<=\d),(?=\d)/g, '') : cell
-        )
-      );
+        const res = await fetch('http://localhost:8001/api/upload-pdf', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const blob = await res.blob();
+        finalFile = new File([blob], 'converted.csv', {
+          type: 'text/csv',
+        });
+
+        const text = await finalFile.text();
+        console.log('[CSV Preview]', text);
+      }
+
+      const ext2 = finalFile.name.split('.').pop()?.toLowerCase();
+
+      if (ext2 === 'csv') {
+        const text = await finalFile.text(); // ✅ use finalFile, not original file
+        const parsed = Papa.parse<string[]>(text, {
+          skipEmptyLines: true,
+          header: false,
+          dynamicTyping: false,
+        });
+
+        headers = parsed.data[0].map((h) => h.trim());
+        rows = parsed.data.slice(1).map((row) =>
+          row.map((cell) =>
+            typeof cell === 'string' ? cell.replace(/(?<=\d),(?=\d)/g, '') : cell
+          )
+        );
+      } else if (ext2 === 'xlsx') {
+        const buffer = await finalFile.arrayBuffer(); // ✅ use finalFile
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 });
+        headers = (data[0] ?? []).map((h) => String(h).trim());
+        rows = (data.slice(1) as string[][]).map((row) =>
+          row.map((cell) =>
+            typeof cell === 'string' ? cell.replace(/(?<=\d),(?=\d)/g, '') : cell
+          )
+        );
+      }
+
+    } catch (err) {
+      console.error("Parsing failed", err);
+    } finally {
+      setIsParsing(false); // Stop loading
     }
 
-    
+
     const amountIndex = headers.findIndex((col) =>
       col.toLowerCase().includes('amount')
     );
 
-    
+
     if (amountIndex !== -1 && negateAmounts) {
       rows = rows.map((row) => {
         const raw = parseFloat(row[amountIndex]);
         if (!isNaN(raw)) {
-          row[amountIndex] = String(raw * -1); 
+          row[amountIndex] = String(raw * -1);
         }
         return row;
       });
     }
 
     setSheetColumns(headers);
-    setSheetData(rows); 
+    setSheetData(rows);
+
+
   };
 
   const value = {
@@ -202,6 +233,7 @@ export const ImportFileProvider = ({
     setNegateAmounts,
 
     parseFile,
+    isParsing,
   };
 
   return (

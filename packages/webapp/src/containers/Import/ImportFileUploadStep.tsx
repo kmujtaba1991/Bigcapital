@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Callout, Classes, Intent, Switch } from '@blueprintjs/core';
+import { Callout, Classes, Intent, Switch, Spinner} from '@blueprintjs/core';
 import { Stack } from '@/components';
 import { ImportDropzone } from './ImportDropzone';
 import { ImportSampleDownload } from './ImportSampleDownload';
@@ -31,6 +31,7 @@ export function ImportFileUploadStep() {
     negateAmounts,
     setNegateAmounts,
     setSheetData,
+    isParsing,
   } = useImportFileContext();
 
 
@@ -73,7 +74,12 @@ export function ImportFileUploadStep() {
             ensure it is properly formatted. It's not necessary for the columns
             to be in the same order, you can map them later.
           </p>
-
+          {isParsing && (
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <Spinner intent="primary" size={40} />
+              <p>Processing your PDF...</p>
+            </div>
+          )}
           {sheetData.length > 0 && (
             <>
               <div style={{ marginBottom: 16 }}>
