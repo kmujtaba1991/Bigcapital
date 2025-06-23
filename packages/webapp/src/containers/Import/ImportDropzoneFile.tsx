@@ -46,7 +46,7 @@ export function ImportDropzoneField({
       onDrop={(files) => handleChange(files[0])}
       onReject={(files) => console.log('rejected files', files)}
       maxSize={5 * 1024 ** 2}
-      accept={[MIME_TYPES.csv, MIME_TYPES.xls, MIME_TYPES.xlsx]}
+      accept={[MIME_TYPES.csv, MIME_TYPES.xls, MIME_TYPES.xlsx, MIME_TYPES.pdf]}
       classNames={{ root: classNames?.root, content: styles.dropzoneContent }}
       activateOnClick={false}
       openRef={openRef}
